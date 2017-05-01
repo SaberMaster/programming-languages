@@ -157,32 +157,23 @@ fun remove_dup_number (numbers : int list) =
         if null numbers
         then []
         else
-            if null (tl numbers)
-            then
+            let
+                val other_numbers = remove_this_number(number, (tl numbers))
+            in
                 if number = (hd numbers)
-                then []
-                else [hd numbers]
-            else
-                let
-                    val other_numbers = remove_this_number(number, (tl numbers))
-                in
-                    if number = (hd numbers)
-                    then other_numbers
-                    else (hd numbers) :: other_numbers
-                end
+                then other_numbers
+                else (hd numbers) :: other_numbers
+            end
 
       fun walk_numbers (numbers : int list) =
         if null numbers
         then []
         else
-            if null (tl numbers)
-            then [hd numbers]
-            else
-                let
-                    val new_numbers = remove_this_number((hd numbers), (tl numbers))
-                in
-                    (hd numbers) :: walk_numbers(new_numbers)
-                end
+            let
+                val new_numbers = remove_this_number((hd numbers), (tl numbers))
+            in
+                (hd numbers) :: walk_numbers(new_numbers)
+            end
   in
       walk_numbers numbers
   end
