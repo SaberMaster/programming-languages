@@ -165,17 +165,17 @@ fun remove_dup_number (numbers : int list) =
                 else (hd numbers) :: other_numbers
             end
 
-      fun walk_numbers (numbers : int list) =
+      fun walk_numbers (numbers : int list,
+                        save_number_list : int list) =
         if null numbers
-        then []
+        then save_number_list
         else
-            let
-                val new_numbers = remove_this_number((hd numbers), (tl numbers))
-            in
-                (hd numbers) :: walk_numbers(new_numbers)
-            end
+            walk_numbers(remove_this_number(hd numbers,
+                                            tl numbers),
+                         (hd numbers :: save_number_list))
+
   in
-      walk_numbers numbers
+      walk_numbers(numbers, [])
   end
 
 fun number_in_months_challenge (dates : (int * int * int) list,
