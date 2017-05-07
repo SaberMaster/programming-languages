@@ -164,6 +164,23 @@ fun score_challenge (cs, goal) =
 
 fun officiate_challenge (cs, ml, goal) =
   let
+
+      fun card_value_min (suit, rank) =
+        case rank
+         of Num x => x
+          | Ace => 1
+          | _ => 10
+
+      fun sum_cards_min (cs) =
+        let
+            fun sum_card_and_acc (cs, acc) =
+              case cs
+               of [] => acc
+                | x::xs' => sum_card_and_acc(xs', acc + card_value_min(x))
+        in
+            sum_card_and_acc(cs, 0)
+        end
+
       fun game_run_next_round(cs, hl, ml) =
         case ml
          of [] => score_challenge(hl, goal)
@@ -173,7 +190,8 @@ fun officiate_challenge (cs, ml, goal) =
                                                               tl1)
                          | Draw => case cs
                                     of [] => score_challenge(hl, goal)
-                                     | x::xs' => if sum_cards(x::hl) > goal
+                                                           (* here only if there is no sum that is less than or equal to the goal. the min sum is greater than goal *)
+                                     | x::xs' => if sum_cards_min(x::hl) > goal
                                                  then score_challenge(x::hl, goal)
                                                  else game_run_next_round(xs',
                                                                           x::hl,
