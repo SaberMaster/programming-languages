@@ -78,8 +78,8 @@ fun remove_card (cs, c, e) =
   case cs
    of [] => raise e
     | x::xs' => if c = x
-              then xs'
-              else x::remove_card(xs', c, e)
+               then xs'
+               else x::remove_card(xs', c, e)
 
 fun all_same_color (cs) =
   case cs
@@ -128,4 +128,96 @@ fun officiate (cs, ml, goal) =
 
   in 
       game_run_next_round(cs, [], ml)
+  end
+
+fun score_challenge (cs, goal) =
+  let
+
+      fun score_change (ace_num) =
+        let
+            val delta = sum_cards(cs) - goal - 10 * ace_num
+        in
+            (if delta > 0
+             then 3 * delta
+             else ~delta) div (if all_same_color(cs)
+                              then 2
+                              else 1)
+        end
+
+      fun get_min_score (cs, acc, min_score) =
+        case cs
+         of [] => min_score
+          | hd1::tl1 => case hd1
+                        of (_, Ace) => let
+                            val new_score = score_change(acc + 1)
+                        in
+                            if new_score < min_score
+                            then get_min_score(tl1, acc + 1, new_score)
+                            else get_min_score(tl1, acc + 1, min_score)
+                        end
+                         | _ => get_min_score(tl1, acc, min_score)
+
+  in
+      get_min_score(cs, 0, score_change(0))
+  end
+
+
+fun officiate_challenge (cs, ml, goal) =
+  let
+      fun game_run_next_round(cs, hl, ml) =
+        case ml
+         of [] => score_challenge(hl, goal)
+          | hd1::tl1 => case hd1
+                        of Discard card => game_run_next_round(cs,
+                                                              remove_card(hl, card, IllegalMove),
+                                                              tl1)
+                         | Draw => case cs
+                                    of [] => score_challenge(hl, goal)
+                                     | x::xs' => if sum_cards(x::hl) > goal
+                                                 then score_challenge(x::hl, goal)
+                                                 else game_run_next_round(xs',
+                                                                          x::hl,
+                                                                          tl1)
+
+  in
+      game_run_next_round(cs, [], ml)
+  end
+
+fun careful_player (cs, goal) =
+  let
+      fun have_card_with_this_value_and_discard (hl, value, mv_hd, mv_tl) =
+        case hl
+         of [] => mv_hd @ mv_tl
+          | x::xs' => case mv_tl
+                      of [] =>  mv_hd @ mv_tl
+                       | hd1::tl1 => if value = card_value(x)
+                                    then mv_hd @ hd1::(Discard x)::tl1 @ [Draw]
+                                    else have_card_with_this_value_and_discard(xs',
+                                                                               value,
+                                                                               mv_hd @ [hd1],
+                                                                               tl1)
+
+      fun try_draw_one_more (cs, hl, mv) =
+        let
+            val tmp_score = sum_cards(hl)
+        in
+            if goal - tmp_score = 0
+            then mv
+            else if goal - tmp_score > 10
+            then
+                case cs
+                 of [] => mv @ [Draw]
+                  | hd1::tl1 => try_draw_one_more(tl1,
+                                                 hl @ [hd1],
+                                                 mv @ [Draw])
+            else
+                case cs
+                 of [] => mv
+                 | hd1::tl1 => have_card_with_this_value_and_discard(hl @ [hd1],
+                                                                    tmp_score + card_value(hd1) - goal,
+                                                                    [],
+                                                                    mv)
+        end
+  in
+      try_draw_one_more(cs, [], [])
   end
