@@ -83,9 +83,8 @@ fun remove_card (cs, c, e) =
 
 fun all_same_color (cs) =
   case cs
-   of x::y::z => if card_color(x) = card_color(y)
-                then all_same_color(y::z)
-                else false
+   of x::y::z => card_color(x) = card_color(y) andalso
+                all_same_color(y::z)
    | _ => true
 
 fun sum_cards (cs) =
