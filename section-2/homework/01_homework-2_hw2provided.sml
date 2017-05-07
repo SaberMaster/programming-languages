@@ -61,3 +61,71 @@ datatype move = Discard of card | Draw
 exception IllegalMove
 
 (* put your solutions for problem 2 here *)
+
+fun card_color (suit, rank) =
+  case suit
+   of Diamonds => Red
+   | Hearts => Red
+   | _ => Black
+
+fun card_value (suit, rank) =
+  case rank
+   of Num x => x
+   | Ace => 11
+   | _ => 10
+
+fun remove_card (cs, c, e) =
+  case cs
+   of [] => raise e
+    | x::xs' => if c = x
+              then xs'
+              else x::remove_card(xs', c, e)
+
+fun all_same_color (cs) =
+  case cs
+   of x::y::z => if card_color(x) = card_color(y)
+                then all_same_color(y::z)
+                else false
+   | _ => true
+
+fun sum_cards (cs) =
+  let
+      fun sum_card_and_acc (cs, acc) =
+        case cs
+         of [] => acc
+          | x::xs' => sum_card_and_acc(xs', acc + card_value(x))
+  in
+      sum_card_and_acc(cs, 0)
+  end
+
+fun score (cs, goal) =
+  let
+      val delta = sum_cards(cs) - goal
+  in
+      (if delta > 0
+      then 3 * delta
+      else ~delta) div (if all_same_color(cs)
+                                 then 2 
+                                 else 1)
+  end
+
+fun officiate (cs, ml, goal) =
+  let
+      fun game_run_next_round(cs, hl, ml) =
+        case ml
+         of [] => score(hl, goal)
+         | hd1::tl1 => case hd1
+                       of Discard card => game_run_next_round(cs,
+                                                             remove_card(hl, card, IllegalMove),
+                                                             tl1)
+                        | Draw => case cs
+                                  of [] => score(hl, goal)
+                                   | x::xs' => if sum_cards(x::hl) > goal
+                                               then score(x::hl, goal)
+                                               else game_run_next_round(xs',
+                                                                        x::hl,
+                                                                        tl1)
+
+  in 
+      game_run_next_round(cs, [], ml)
+  end
