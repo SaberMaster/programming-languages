@@ -131,3 +131,58 @@ fun match pair =
 fun first_match v xs =
   SOME(first_answer (fn x => match (v, x)) xs)
   handle NoAnswer => NONE
+
+
+
+(* fun typecheck_patterns (ts, ps) = *)
+(*   let *)
+
+(*       fun type_change p xs = *)
+(*         first_answer (fn (b, c : typ) => if p = c *)
+(*                                         then SOME(Datatype b) *)
+(*                                         else NONE) xs *)
+(*         handle NoAnswer => p *)
+
+(*       (* fun type_match (p, xs) = *) *)
+(*       (*   case p of *) *)
+(*       (*       UnitP => type_change UnitT xs *) *)
+(*       (*     | ConstP _ => type_change IntT xs *) *)
+(*       (*     | TupleP ps => case (all_answers (fn x => type_match (x, xs)) ps) *) *)
+(*       (*                    of SOME v => SOME ((type_change TupleT xs) v) *) *)
+(*       (*                     | NONE => SOME [(type_change TupleT xs) []] *) *)
+(*       (*                     | ConstructorP(s, p) => SOME [] *) *)
+(*       (*                       (* type_match(p, xs) *) *) *)
+(*       (*                       (*      handle NoAnswer => type_match(p, (first_answer (fn (a, b, c) => if s = a *) *) *)
+(*       (*                       (*                                                                     then SOME (b, c) *) *) *)
+(*       (*                       (*                                                                     else NONE) ts)::xs) *) *) *)
+(*       (*     | _ => SOME [Anything] *) *)
+
+(*       (* fun fold_helper2 f acc xs = *) *)
+(*       (*   case xs *) *)
+(*       (*    of [] => SOME acc *) *)
+(*       (*     | x::xs' => case f (acc, x) *) *)
+(*       (*                 of NONE => NONE *) *)
+(*       (*                  | SOME v => fold_helper f v xs' *) *)
+
+(*       (* fun pattern_checker pair = *) *)
+(*       (*   case pair of *) *)
+(*       (*       (UnitP, UnitP) => SOME UnitP *) *)
+(*       (*     | (ConstP i, ConstP j) => if i = j *) *)
+(*       (*                              then SOME (ConstP i) *) *)
+(*       (*                              else NONE *) *)
+(*       (*     | (TupleP ps1, TupleP ps2) => fold_helper2 pattern_checker [] ListPair.zip(ps1, ps2) *) *)
+(*       (*     | (ConstructorP(s1, p1), ConstructorP(s2, p2)) => if s1 = s2 *) *)
+(*       (*                                                       then pattern_checker(p1, p2) *) *)
+(*       (*                                                       else NONE *) *)
+(*       (*     | (v, Wildcard) => SOME v *) *)
+(*       (*     | (v, Variable _) => SOME v *) *)
+(*       (*     | (Wildcard, v) => SOME v *) *)
+(*       (*     | (Variable _, v) => SOME v *) *)
+(*       (*     | _ => NONE *) *)
+
+(*   in *)
+(*       (* case (fold_helper2 pattern_checker [] ps) *) *)
+(*       (*  of NONE => NONE *) *)
+(*       (*   | SOME v => type_match v [] *) *)
+(*       (* SOME [] *) *)
+(*   end *)

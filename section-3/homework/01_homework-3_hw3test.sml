@@ -38,3 +38,67 @@ val test11 = match (Const(1), UnitP) = NONE
 val test11_b = match (Tuple [Unit, Unit, Const(2), Unit], TupleP [Variable("a"), Variable("ab"), Variable("ab"), Wildcard]) = SOME [("a", Unit), ("ab", Unit), ("ab", Const(2))]
 
 val test12 = first_match Unit [UnitP] = SOME []
+
+val test_typecheck_patterns_1 = typecheck_patterns([], [TupleP [Variable "x", Variable "y"],
+                                TupleP [Wildcard, Wildcard]])
+                              = SOME(TupleT [Anything, Anything])
+
+val test_typecheck_patterns_2 = typecheck_patterns([], []) = NONE
+
+val test_typecheck_patterns_3 = typecheck_patterns([], [TupleP [Wildcard, TupleP [Wildcard, Wildcard]],
+                                TupleP [Wildcard, Wildcard]])
+  = SOME(TupleT [Anything, TupleT [Anything, Anything]])
+
+val test_typecheck_patterns_4 = typecheck_patterns([], [ConstP 5, Wildcard, ConstP 3, Variable "x"])
+  = SOME(IntT)
+
+val test_typecheck_patterns_5 = typecheck_patterns([], [ConstP 5, UnitP]) = NONE
+
+val test_typecheck_patterns_6 = typecheck_patterns([("c", "t", IntT)], [ConstructorP("c", ConstP 5), ConstP 5])
+  = NONE
+
+val test_typecheck_patterns_7 = typecheck_patterns([], [TupleP [Wildcard], TupleP [Wildcard, Wildcard]])
+  = NONE
+
+val test_typecheck_patterns_8 = typecheck_patterns([], [TupleP [ConstP 3], TupleP [UnitP]])
+  = NONE
+
+val test_typecheck_patterns_9 = typecheck_patterns([], [TupleP [Wildcard, ConstP 1], TupleP [Wildcard, TupleP [Wildcard]]])
+  = NONE
+
+val test_typecheck_patterns_10 = typecheck_patterns([], [ConstructorP("c", Variable "x")])
+  = NONE
+
+val test_typecheck_patterns_11 = typecheck_patterns([("c", "t", TupleT[IntT, Anything])],
+                           [ConstructorP("c", TupleP [ConstP 4, Variable "x"])])
+  = SOME(Datatype "t")
+
+val test_typecheck_patterns_12 = typecheck_patterns([("c1", "t1", UnitT), ("c2", "t2", UnitT)],
+                           [ConstructorP("c1", UnitP), ConstructorP("c2", UnitP)])
+  = NONE
+
+val test_typecheck_patterns_13 = typecheck_patterns([("c1", "t1", UnitT), ("c2", "t2", UnitT)],
+                           [ConstructorP("c1", UnitP), ConstructorP("c1", UnitP)])
+  = SOME(Datatype "t1")
+
+val test_typecheck_patterns_14 = typecheck_patterns([("c", "t", TupleT[Anything, Anything])],
+                           [ConstructorP("c", TupleP [ConstP 4, Variable "x"])])
+  = NONE
+
+val test_typecheck_patterns_15 = typecheck_patterns([("c", "t", IntT)], [
+                           TupleP [Wildcard, TupleP [ConstP 3, Wildcard]],
+                           TupleP [Wildcard, TupleP [Variable "x", UnitP]],
+                           TupleP [ConstructorP("c", ConstP 13), Wildcard]
+                           ])
+  = SOME(TupleT [Datatype "t", TupleT [IntT, UnitT]])
+
+val test_typecheck_patterns_16 = typecheck_patterns([("c1", "t", TupleT[IntT, Datatype "t"]), ("c2", "t", UnitT)],
+  [ConstructorP("c1", TupleP [ConstP 5, ConstructorP("c2", UnitP)]), ConstructorP("c2", UnitP)])
+  = SOME(Datatype "t")
+
+val test_typecheck_patterns_17 = typecheck_patterns([("c", "t", TupleT[IntT, Datatype "t"]), ("c", "t", UnitT)],
+  [ConstructorP("c", TupleP [ConstP 5, ConstructorP("c", UnitP)]), ConstructorP("c", UnitP)])
+  = SOME(Datatype "t")
+
+val test_typecheck_patterns_18 = typecheck_patterns([("foo1","bar1",Datatype "bar2"),("foo2","bar2",UnitT)],
+                                  [ConstructorP("foo1", Variable "x")]) = SOME (Datatype "bar1")
