@@ -52,14 +52,14 @@ fun longest_string2 xs =
                             then acc
                             else x) "" xs
 
-fun longest_string_helper f xs =
-  List.foldl (fn (x, acc) => if f (String.size acc, String.size x)
-                            then acc
-                            else x) "" xs
+fun longest_string_helper f =
+  List.foldl (fn (x, acc) => if f (String.size x, String.size acc)
+                            then x
+                            else acc) ""
 
-val longest_string3 = longest_string_helper (fn (x, y) => x >= y)
+val longest_string3 = longest_string_helper (fn (x, y) => x > y)
 
-val longest_string4 = longest_string_helper (fn (x, y) => x > y)
+val longest_string4 = longest_string_helper (fn (x, y) => x >= y)
 
 val longest_capitalized = longest_string1 o only_capitals
 
@@ -137,38 +137,64 @@ fun first_match v xs =
 fun typecheck_patterns (ts, ps) =
   let
 
-      fun type_change p xs =
-        first_answer (fn (b, c : typ) => if p = c
-                                        then SOME(Datatype b)
-                                        else NONE) xs
-        handle NoAnswer => p
+      (* fun type_change p xs = *)
+      (*   first_answer (fn (b, c : typ) => if p = c *)
+      (*                                   then SOME(Datatype b) *)
+      (*                                   else NONE) xs *)
+      (*   handle NoAnswer => p *)
 
-      fun type_match (p, xs) =
+      (* fun type_match (p, xs) = *)
+      (*   case p of *)
+      (*       UnitP => SOME (type_change UnitT xs) *)
+      (*     | ConstP _ => SOME (type_change IntT xs) *)
+      (*     | TupleP ps => (case all_answers (fn x => case type_match(x, xs) *)
+      (*                                                of SOME v => SOME [v] *)
+      (*                                                | NONE => NONE) ps *)
+      (*                      of SOME v => SOME (type_change (TupleT v) xs) *)
+      (*                      | NONE => NONE) *)
+
+      (*     (* | ConstructorP(s, p) => type_match(p, ((first_answer (fn (a, b, c) => if s = a *) *)
+      (*     (*                                                                       then SOME (b, c) *) *)
+      (*     (*                                                                       else NONE) *) *)
+      (*     (*                                                      ts)::xs *) *)
+      (*     (*                                        handle NoAnswer => xs)) *) *)
+      (*     | ConstructorP(s, p) => let val newX = SOME(first_answer (fn (a, b, c) => if s = a *)
+      (*                                                                        then SOME (b, c) *)
+      (*                                                                        else NONE) ts) *)
+      (*                                           handle NoAnswer => NONE *)
+      (*                            in *)
+      (*                                case newX *)
+      (*                                 of NONE =>  NONE *)
+      (*                                  | SOME (b, c) => case type_match(p, (b, c)::xs) *)
+      (*                                                   of NONE => NONE *)
+      (*                                                    | SOME t => if (Datatype b) = t *)
+      (*                                                               then SOME t *)
+      (*                                                               else NONE *)
+      (*                            end *)
+      (*     | _ => SOME (Anything) *)
+
+      fun type_match p =
         case p of
-            UnitP => SOME (type_change UnitT xs)
-          | ConstP _ => SOME (type_change IntT xs)
-          | TupleP ps => (case all_answers (fn x => case type_match(x, xs)
-                                                     of SOME v => SOME [v]
-                                                     | NONE => NONE) ps
-                           of SOME v => SOME (type_change (TupleT v) xs)
+            UnitP => SOME UnitT
+          | ConstP _ => SOME IntT
+          | TupleP ps => (case all_answers (fn x => case type_match x
+                                                   of SOME v => SOME [v]
+                                                    | NONE => NONE) ps
+                          of SOME v => SOME (TupleT v)
                            | NONE => NONE)
-          (* | ConstructorP(s, p) => type_match(p, ((first_answer (fn (a, b, c) => if s = a *)
-          (*                                                                        then SOME (b, c) *)
-          (*                                                                     else NONE) *)
-          (*                                                     ts)::xs *)
-          (*                                       handle NoAnswer => xs)) *)
 
           | ConstructorP(s, p) => let val newX = SOME(first_answer (fn (a, b, c) => if s = a
-                                                                             then SOME (b, c)
-                                                                             else NONE) ts)
+                                                                                  then SOME (b, c)
+                                                                                  else NONE) ts)
                                                 handle NoAnswer => NONE
                                  in
                                      case newX
-                                      of NONE =>  NONE
-                                       | SOME (b, c) => case type_match(p, (b, c)::xs)
+                                      of NONE => NONE
+                                       | SOME (b, c) => case type_match p
                                                         of NONE => NONE
-                                                         | SOME t => if (Datatype b) = t
-                                                                    then SOME t
+                                                         (* Don't forget Anything *)
+                                                         | SOME t => if c = t orelse t = Anything
+                                                                    then SOME (Datatype b)
                                                                     else NONE
                                  end
           | _ => SOME (Anything)
@@ -179,32 +205,6 @@ fun typecheck_patterns (ts, ps) =
           | x::xs' => case f (acc, x)
                       of NONE => NONE
                        | SOME v => fold_helper2 f v xs'
-
-      (* fun pattern_checker pair = *)
-      (*   case pair of *)
-      (*       (UnitP, UnitP) => SOME UnitP *)
-      (*     (* here ConstP i match ConstP j? *) *)
-      (*     (* | (ConstP i, ConstP j) => if i = j *) *)
-      (*     (*                          then SOME (ConstP i) *) *)
-      (*     (*                          else NONE *) *)
-      (*     | (ConstP i, ConstP j) => SOME (ConstP i) *)
-      (*     | (TupleP ps1, TupleP ps2) => if List.length ps1 = List.length ps2 *)
-      (*                                   then (case (all_answers (fn x => case pattern_checker(x) *)
-      (*                                                                    of SOME v => SOME [v] *)
-      (*                                                                    | NONE => NONE) *)
-      (*                                                           (ListPair.zip(ps1, ps2))) *)
-      (*                                        of SOME v => SOME (TupleP v) *)
-      (*                                         | NONE => NONE) *)
-      (*                                  else NONE *)
-      (*     | (ConstructorP(s1, p1), ConstructorP(s2, p2)) => if s1 = s2 *)
-      (*                                                       then pattern_checker(p1, p2) *)
-      (*                                                       else NONE *)
-      (*     | (v, Wildcard) => SOME v *)
-      (*     | (v, Variable _) => SOME v *)
-      (*     | (Wildcard, v) => SOME v *)
-      (*     | (Variable _, v) => SOME v *)
-      (*     | _ => NONE *)
-
 
       fun pattern_checker pair =
         case pair of
@@ -226,19 +226,20 @@ fun typecheck_patterns (ts, ps) =
           | _ => NONE
 
   in
+      (* case (all_answers (fn p => case type_match(p, []) *)
+      (*                            of SOME v => SOME [v] *)
+      (*                            | NONE  => NONE) ps) *)
+      (*  of NONE => NONE *)
+      (*   | SOME i => case i *)
+      (*               of [] => NONE *)
+      (*               | a::ax' => fold_helper2 pattern_checker a ax' *)
 
-      (* case ps *)
-      (*  of [] => NONE *)
-      (*  | p::ps' => case (fold_helper2 pattern_checker p ps') *)
-      (*              of NONE => NONE *)
-      (*               | SOME v => type_match (v, []) *)
-
-      case (all_answers (fn p => case type_match(p, [])
+      case (all_answers (fn p => case type_match p
                                  of SOME v => SOME [v]
-                                 | NONE  => NONE) ps)
+                                  | NONE  => NONE) ps)
        of NONE => NONE
         | SOME i => case i
                     of [] => NONE
-                    | a::ax' => fold_helper2 pattern_checker a ax'
+                     | a::ax' => fold_helper2 pattern_checker a ax'
 
   end
