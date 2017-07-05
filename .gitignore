@@ -1,3 +1,7 @@
 .DS_Store
 *.pdf
 *.html
+*.jpg
+*.rkt~
+*.dep
+*.zo

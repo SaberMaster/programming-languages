@@ -144,7 +144,10 @@
              (int 0)))]
 
         [(closure? e)
-         (eval-under-env (call e null) env)]
+         (closure (closure-env e) (closure-fun e))]
+
+        [(aunit? e)
+         (aunit)]
 
         [#t (error (format "bad MUPL expression: ~v" e))]))
 
