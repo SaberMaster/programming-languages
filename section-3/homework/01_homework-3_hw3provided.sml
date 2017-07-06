@@ -137,109 +137,57 @@ fun first_match v xs =
 fun typecheck_patterns (ts, ps) =
   let
 
-      (* fun type_change p xs = *)
-      (*   first_answer (fn (b, c : typ) => if p = c *)
-      (*                                   then SOME(Datatype b) *)
-      (*                                   else NONE) xs *)
-      (*   handle NoAnswer => p *)
-
-      (* fun type_match (p, xs) = *)
-      (*   case p of *)
-      (*       UnitP => SOME (type_change UnitT xs) *)
-      (*     | ConstP _ => SOME (type_change IntT xs) *)
-      (*     | TupleP ps => (case all_answers (fn x => case type_match(x, xs) *)
-      (*                                                of SOME v => SOME [v] *)
-      (*                                                | NONE => NONE) ps *)
-      (*                      of SOME v => SOME (type_change (TupleT v) xs) *)
-      (*                      | NONE => NONE) *)
-
-      (*     (* | ConstructorP(s, p) => type_match(p, ((first_answer (fn (a, b, c) => if s = a *) *)
-      (*     (*                                                                       then SOME (b, c) *) *)
-      (*     (*                                                                       else NONE) *) *)
-      (*     (*                                                      ts)::xs *) *)
-      (*     (*                                        handle NoAnswer => xs)) *) *)
-      (*     | ConstructorP(s, p) => let val newX = SOME(first_answer (fn (a, b, c) => if s = a *)
-      (*                                                                        then SOME (b, c) *)
-      (*                                                                        else NONE) ts) *)
-      (*                                           handle NoAnswer => NONE *)
-      (*                            in *)
-      (*                                case newX *)
-      (*                                 of NONE =>  NONE *)
-      (*                                  | SOME (b, c) => case type_match(p, (b, c)::xs) *)
-      (*                                                   of NONE => NONE *)
-      (*                                                    | SOME t => if (Datatype b) = t *)
-      (*                                                               then SOME t *)
-      (*                                                               else NONE *)
-      (*                            end *)
-      (*     | _ => SOME (Anything) *)
-
-      fun type_match p =
+      fun type_match_pre p =
         case p of
-            UnitP => SOME UnitT
-          | ConstP _ => SOME IntT
-          | TupleP ps => (case all_answers (fn x => case type_match x
-                                                   of SOME v => SOME [v]
-                                                    | NONE => NONE) ps
-                          of SOME v => SOME (TupleT v)
-                           | NONE => NONE)
+            UnitP => UnitP
+          | ConstP _ => ConstP 0
+          | TupleP ps => TupleP(List.map (fn x => type_match_pre x) ps)
+          | ConstructorP(s, p) => ConstructorP(s, type_match_pre p)
+          | _ => Wildcard
 
-          | ConstructorP(s, p) => let val newX = SOME(first_answer (fn (a, b, c) => if s = a
-                                                                                  then SOME (b, c)
-                                                                                  else NONE) ts)
-                                                handle NoAnswer => NONE
-                                 in
-                                     case newX
-                                      of NONE => NONE
-                                       | SOME (b, c) => case type_match p
-                                                        of NONE => NONE
-                                                         (* Don't forget Anything *)
-                                                         | SOME t => if c = t orelse t = Anything
-                                                                    then SOME (Datatype b)
-                                                                    else NONE
-                                 end
-          | _ => SOME (Anything)
 
-      fun fold_helper2 f acc xs =
-        case xs
-         of [] => SOME acc
-          | x::xs' => case f (acc, x)
-                      of NONE => NONE
-                       | SOME v => fold_helper2 f v xs'
 
-      fun pattern_checker pair =
-        case pair of
-            (UnitT, UnitT) => SOME UnitT
-          | (IntT, IntT) => SOME IntT
-          | (TupleT ps1, TupleT ps2) => if List.length ps1 = List.length ps2
-                                        then (case (all_answers (fn x => case pattern_checker(x)
-                                                                         of SOME v => SOME [v]
-                                                                         | NONE => NONE)
-                                                                (ListPair.zip(ps1, ps2)))
-                                             of SOME v => SOME (TupleT v)
-                                              | NONE => NONE)
-                                       else NONE
-          | (Datatype(s1), Datatype(s2)) => if s1 = s2
-                                           then SOME (Datatype(s1))
-                                           else NONE
-          | (v, Anything) => SOME v
-          | (Anything, v) => SOME v
-          | _ => NONE
+
+      fun pattern_compare (basic, new) =
+        if basic = new
+        then true
+        else case (basic, new) of
+                 (TupleT ps1, TupleT ps2) => if List.length ps1 = List.length ps2
+                                            then List.foldl (fn (x, acc) => x andalso acc) true (List.map pattern_compare (ListPair.zip(ps1, ps2)))
+                                            else raise NoAnswer
+               | (v, Anything) => true
+               (* | (Anything, v) => true *)
+               | _ => false
+
+      fun type_match_aft part =
+        case part of
+            UnitP => UnitT
+          | ConstP _ => IntT
+          | TupleP ps => TupleT(List.map (fn x => type_match_aft x) ps)
+          | ConstructorP(s, p) => (case (List.find (fn (a, b, c) => (a = s) andalso pattern_compare(c, type_match_aft p)) ts)
+                                  of NONE => raise NoAnswer
+                                   | SOME (a, b, c) => Datatype b)
+          | _ => Anything
+
+      fun pattern_checker (p1, p2) =
+        if p1 = p2
+        then p1
+        else case (p1, p2) of
+                 (TupleP ps1, TupleP ps2) => if List.length ps1 = List.length ps2
+                                             then TupleP(List.map pattern_checker (ListPair.zip(ps1, ps2)))
+                                             else raise NoAnswer
+               | (ConstructorP(s1, p1), ConstructorP(s2, p2)) => if (type_match_aft (ConstructorP(s1, p1)) = (type_match_aft (ConstructorP(s2, p2))) handle NoAnswer => false)
+                                                                then ConstructorP(s1, p1)
+                                                                else raise NoAnswer
+               | (v, Wildcard) => v
+               | (Wildcard, v) => v
+               | _ => raise NoAnswer
+
 
   in
-      (* case (all_answers (fn p => case type_match(p, []) *)
-      (*                            of SOME v => SOME [v] *)
-      (*                            | NONE  => NONE) ps) *)
-      (*  of NONE => NONE *)
-      (*   | SOME i => case i *)
-      (*               of [] => NONE *)
-      (*               | a::ax' => fold_helper2 pattern_checker a ax' *)
-
-      case (all_answers (fn p => case type_match p
-                                 of SOME v => SOME [v]
-                                  | NONE  => NONE) ps)
-       of NONE => NONE
-        | SOME i => case i
-                    of [] => NONE
-                     | a::ax' => fold_helper2 pattern_checker a ax'
-
+      case (List.map type_match_pre ps)
+       of [] => NONE
+        | x::xs' => case (SOME(List.foldl pattern_checker x xs') handle NoAnswer => NONE)
+                    of NONE => NONE
+                    | SOME v => SOME(type_match_aft v) handle NoAnswer => NONE
   end
