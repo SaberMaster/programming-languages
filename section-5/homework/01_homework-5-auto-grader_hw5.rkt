@@ -157,15 +157,28 @@
         
 ;; Problem 3
 
-(define (ifaunit e1 e2 e3) "CHANGE")
+(define (ifaunit e1 e2 e3)
+  (if (eq? (int 1) (isaunit e1))
+      e2
+      e3))
 
-(define (mlet* lstlst e2) "CHANGE")
+(define (mlet* lstlst e2)
+  (if (null? lstlst)
+      e2
+      (mlet (car (car lstlst)) (cdr (car lstlst)) (mlet* (cdr lstlst) e2))))
 
-(define (ifeq e1 e2 e3 e4) "CHANGE")
+(define (ifeq e1 e2 e3 e4)
+  (let ((_x e1)
+        (_y e2))
+    (ifgreater _x _y e3 e4)))
 
 ;; Problem 4
 
-(define mupl-map "CHANGE")
+(define mupl-map
+  (fun "map" "x" (fun #f "xs" (if (eq? (int 1) (isaunit (fst (var "xs"))))
+                                (aunit)
+                                (apair (call (var "x") (fst (var "xs"))) (call (call (var "map") (var "x")) (snd (var "xs"))))))))
+
 
 (define mupl-mapAddN 
   (mlet "map" mupl-map
