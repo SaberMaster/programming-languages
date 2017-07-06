@@ -187,46 +187,63 @@
   (define (f e)
     (cond ((var? e)
            (cons e (set (var-string e))))
+          ((int? e)
+           (cons e (set)))
           ((add? e)
-           (cons e (set-union (cdr (f (add-e1 e))) (cdr (f (add-e2 e))))))
+           (let ((v1 (f (add-e1 e)))
+                 (v2 (f (add-e2 e))))
+             (cons (add (car v1) (car v2))
+                   (set-union (cdr v1) (cdr v2)))))
           ((ifgreater? e)
-           (cons e (set-union (cdr (f (ifgreater-e1 e))) (cdr (f (ifgreater-e2 e))) (cdr (f (ifgreater-e3 e))) (cdr (f (ifgreater-e4 e))))))
+           (let ((v1 (f (ifgreater-e1 e)))
+                 (v2 (f (ifgreater-e2 e)))
+                 (v3 (f (ifgreater-e3 e)))
+                 (v4 (f (ifgreater-e4 e))))
+             (cons (ifgreater (car v1) (car v2) (car v3) (car v4))
+                   (set-union (cdr v1) (cdr v2) (cdr v3) (cdr v4)))))
           ((mlet? e)
-           (let ((all-set (cdr (f (mlet-body e))))
-                 (none-free (mlet-var e))
-                 ;; add mlet-e
-                 (free-e (cdr (f (mlet-e e)))))
-             (cons e (set-union free-e (set-remove all-set none-free)))))
+           (let ((v1 (f (mlet-e e)))
+                 (v2 (f (mlet-body e))))
+             (cons (mlet (mlet-var e) (car v1) (car v2))
+                   (set-union (cdr v1) (set-remove (cdr v2) (mlet-var e))))))
+
           ((fun? e)
-           (let* ((all-set (cdr (f (fun-body e))))
-                  (none-free (fun-formal e))
-                  ;; remove fun name var
-                  (free-vars (if (fun-nameopt e)
-                                 (set-remove (set-remove all-set none-free) (fun-nameopt e))
-                                 (set-remove all-set none-free))))
-             (cons
-              (fun-challenge (fun-nameopt e) (fun-formal e) (fun-body e)
-                             free-vars)
-              free-vars)))
+           (let* ((v1 (f (fun-body e)))
+                  (free (set-remove (cdr v1) (fun-formal e)))
+                  (free (if (fun-nameopt e)
+                            (set-remove free (fun-nameopt e))
+                            free)))
+             (cons (fun-challenge (fun-nameopt e) (fun-formal e) (car v1) free)
+                   free)))
+
           ((call? e)
-           (cons e (set-union
-                    (cdr (f (call-funexp e)))
-                    ;; union actual
-                    (cdr (f (call-actual e))))))
+           (let ((v1 (f (call-funexp e)))
+                 (v2 (f (call-actual e))))
+             (cons (call (car v1) (car v2))
+                   (set-union (cdr v1) (cdr v2)))))
 
           ((apair? e)
-           (cons e (set-union (cdr (f (apair-e1 e))) (cdr (f (apair-e2 e))))))
+           (let ((v1 (f (apair-e1 e)))
+                 (v2 (f (apair-e2 e))))
+             (cons (apair (car v1) (car v2))
+                   (set-union (cdr v1) (cdr v2)))))
+
           ((fst? e)
-           (cons e (cdr (f (fst-e e)))))
+           (let ((v1 (f (fst-e e))))
+             (cons (fst (car v1))
+                   (cdr v1))))
           ((snd? e)
-           (cons e (cdr (f (snd-e e)))))
+           (let ((v1 (f (snd-e e))))
+             (cons (snd (car v1))
+                   (cdr v1))))
+          ((aunit? e)
+           (cons e (set)))
           ((isaunit? e)
-           (cons e (cdr (f (isaunit-e e)))))
-          ((closure? e)
-           (cons e (cdr (f (closure-fun e)))))
-          (#t (cons e (set)))
-          ))
-  (car (f e)))
+           (let ((v1 (f (isaunit-e e))))
+             (cons (isaunit (car v1))
+                   (cdr v1))))))
+    (car (f e)))
+
 
 ;; ;; Do NOT share code with eval-under-env because that will make
 ;; ;; auto-grading and peer assessment more difficult, so
@@ -252,7 +269,7 @@
 
         [(int? e) e]
 
-        [(fun? e) (closure env e)]
+        ;; [(fun? e) (closure env e)]
 
         [(ifgreater? e)
          (let ((v1 (eval-under-env-c (ifgreater-e1 e) env))
