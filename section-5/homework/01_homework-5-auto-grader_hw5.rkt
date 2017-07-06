@@ -183,6 +183,12 @@
 
 ;; ;; We will test this function directly, so it must do
 ;; ;; as described in the assignment
+
+;; we need to rev trans fun to fun-challenge so use
+;;(cons (struct (car v1) (car v2)) (set-union (cdr v1) (cdr v2)))
+;; use pair to store trans result and sets
+;; if use (cons e (set-union (cdr v1) (cdr v2))) sub fun will not be trans to challenge
+
 (define (compute-free-vars e)
   (define (f e)
     (cond ((var? e)
@@ -213,6 +219,7 @@
                   (free (if (fun-nameopt e)
                             (set-remove free (fun-nameopt e))
                             free)))
+             ;; only body can eval so trans body
              (cons (fun-challenge (fun-nameopt e) (fun-formal e) (car v1) free)
                    free)))
 
@@ -250,6 +257,9 @@
 ;; ;; copy most of your interpreter here and make minor changes
 ;; ;; (define (eval-under-env-c e env) "CHANGE")
 
+;; this method all fun already trans to fun-challenge
+;; so we change fun case to fun-challenge case
+;; because no fun so we need to fix call to adapt to fun-challenge
 (define (eval-under-env-c e env)
   ;; add a case
   (cond [(fun-challenge? e)
@@ -268,8 +278,6 @@
         ;; CHANGE add more cases here
 
         [(int? e) e]
-
-        ;; [(fun? e) (closure env e)]
 
         [(ifgreater? e)
          (let ((v1 (eval-under-env-c (ifgreater-e1 e) env))
