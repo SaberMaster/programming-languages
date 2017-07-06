@@ -1,4 +1,3 @@
-
 #lang racket
 
 (provide (all-defined-out)) ;; so we can put tests in a second file
@@ -23,8 +22,7 @@
 (define (list-nth-mod xs n)
   (cond ((< n 0) (error "list-nth-mod: negative number"))
         ((null? xs) (error "list-nth-mod: empty list"))
-        ((= n 0) (car xs))
-        (#t (car (list-tail xs (+ 1 (remainder (length xs) n)))))))
+        (#t (car (list-tail xs (remainder n (length xs)))))))
 
 ;; (define (stream-for-n-steps s n)
 ;;   (if (< n 1)
@@ -39,7 +37,7 @@
 
 (define funny-number-stream
   (letrec ((f (lambda (x) (cons (if (= 0 (remainder x 5))
-                                    (- 0 x)
+                                    (- x)
                                     x)
                                 (lambda () (f (+ x 1)))))))
     (lambda () (f 1))))
@@ -54,21 +52,20 @@
     (lambda () (f "dan.jpg" "dog.jpg"))))
 
 (define (stream-add-zero s)
-  (letrec ((f (lambda (s) (let ((tmp (s)))
-                               (cons (cons 0 (car tmp)) (lambda () (f (cdr tmp))))))))
-           (lambda () (f s))))
+  (lambda () (let ((tmp (s)))
+               (cons (cons 0 (car tmp)) (stream-add-zero (cdr tmp))))))
 
 (define (cycle-lists xs ys)
-  (letrec ((f (lambda (i) (let ((xi (remainder i (length xs)))
-                                (yi (remainder i (length ys))))
-                            (cons (cons (list-nth-mod xs xi) (list-nth-mod ys yi)) (lambda () (f (+ i 1))))))))
+  (letrec ((f (lambda (i)
+                (cons (cons (list-nth-mod xs i) (list-nth-mod ys i))
+                      (lambda () (f (+ i 1)))))))
     (lambda () (f 0))))
 
 (define (vector-assoc v vec)
   (letrec ((len (vector-length vec))
            (f (lambda (i) (if (< i len)
                               (let ((ith (vector-ref vec i)))
-                                (if (and (pair? ith) (equal? v (car ith)))
+                                (if (and (cons? ith) (equal? v (car ith)))
                                     ith
                                     (f (+ i 1))))
                               #f))))
@@ -76,21 +73,17 @@
 
 (define (cached-assoc xs n)
   (letrec ((cache-vector (make-vector n #f))
-           (cache-index 0)
-           (f (lambda (v)
-                (let ((ans (vector-assoc v cache-vector)))
-                  (if ans
-                      ans
-                      (let ((rst (assoc v xs)))
-                        (if rst
-                            (begin
-                             (vector-set! cache-vector cache-index rst)
-                             (set! cache-index (remainder (+ cache-index 1) n))
-                             rst)
-                            #f)))))))
-    f))
+           (cache-index 0))
+    (lambda (v)
+      (or (vector-assoc v cache-vector)
+          (let ((rst (assoc v xs)))
+            (and rst
+                (begin
+                  (vector-set! cache-vector cache-index rst)
+                  (set! cache-index (remainder (+ cache-index 1) n))
+                  rst)))))))
 
-
+;; here let var name can equal with the params, so e1 change to e_1
 (define-syntax while-less
   (syntax-rules (do)
     ((while-less e1 do e2)
