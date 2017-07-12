@@ -65,6 +65,7 @@
                (error "MUPL addition applied to non-number")))]
         ;; CHANGE add more cases here
 
+        ;; int ... just return the expression itself
         [(int? e) e]
 
         [(fun? e) (closure env e)]
@@ -93,7 +94,7 @@
                (let* ((v3 (closure-fun v1))
                       (bodyenv (cons (cons (fun-formal v3) v2) (closure-env v1)))
                       (bodyenv (if (fun-nameopt v3)
-                                   ;; should bind funname to closure but also fun
+                                   ;; should bind funname to closure but fun
                                    (cons (cons (fun-nameopt v3) v1) bodyenv)
                                    bodyenv)))
                  (eval-under-env (fun-body v3) bodyenv))
