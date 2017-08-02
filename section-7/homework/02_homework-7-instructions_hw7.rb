@@ -212,11 +212,7 @@ class Line < GeometryValue
     other.intersectLine self
   end
   def intersectPoint p
-    if equal_to_fzero(m * p.x + b - p.y)
-      p
-    else
-      NoPoints.new
-    end
+    p.intersectLine(self)
   end
   def intersectLine line
     if real_close(m, line.m)
@@ -268,14 +264,10 @@ class VerticalLine < GeometryValue
     other.intersectVerticalLine self
   end
   def intersectPoint p
-    if equal_to_fzero(x - p.x)
-      p
-    else
-      NoPoints.new
-    end
+    p.intersectVerticalLine(self)
   end
   def intersectLine line
-    Point.new(x, line.m * x + b)
+    line.intersectVerticalLine(self)
   end
 
   def intersectVerticalLine vline
