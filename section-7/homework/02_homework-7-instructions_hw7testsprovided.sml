@@ -4,7 +4,7 @@
 
 (* These tests do NOT cover all the various cases, especially for intersection *)
 
-use "hw7.sml";
+use "02_homework-7-instructions_hw7.sml";
 
 (* Must implement preprocess_prog and Shift before running these tests *)
 
