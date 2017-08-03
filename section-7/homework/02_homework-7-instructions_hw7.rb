@@ -166,9 +166,10 @@ class Point < GeometryValue
   end
 
   private
-  def between(val, low, high)
+  def between(val, from, to)
     eps = GeometryExpression::Epsilon
-    (low - eps <= val) && (val <= high + eps)
+    # when x1 < x2 but y1 may be > y2
+    ((from - eps <= val) && (val <= to + eps)) || ((to - eps <= val) && (val <= from + eps))
   end
 end
 
@@ -308,7 +309,7 @@ class LineSegment < GeometryValue
         elsif y2 < seg.y1
           NoPoints.new
         elsif y2 < seg.y2
-          LineSegment(seg.x1, seg.y1, x2, y2)
+          LineSegment.new(seg.x1, seg.y1, x2, y2)
         else
           seg
         end
@@ -323,7 +324,7 @@ class LineSegment < GeometryValue
         elsif x2 < seg.x1
           NoPoints.new
         elsif x2 < seg.x2
-          LineSegment(seg.x1, seg.y1, x2, y2)
+          LineSegment.new(seg.x1, seg.y1, x2, y2)
         else
           seg
         end
@@ -366,7 +367,8 @@ class Let < GeometryExpression
   end
 
   def eval_prog env
-    @e2.eval_prog [[@s, @e1]] + env
+    # here must eval @e1
+    @e2.eval_prog ([[@s, @e1.eval_prog(env)]] + env)
   end
 
 end
