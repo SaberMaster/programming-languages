@@ -338,40 +338,36 @@ class LineSegment < GeometryValue
   # the line containing seg, then we return the intersection of the
   # shape s and the seg.  seg is an instance of LineSegment
   def intersectWithSegmentAsLineResult seg
-    if real_close(x1, seg.x1)
-      # p1 same
-      if real_close(y1, seg.y1)
-        # p2 < seg.p2
-        if x2 < seg.x2
-          self
-        # p2 > seg.p2
-        else
-          seg
-        end
-        # VSegLine
-      elsif y1 < seg.y1
-        if y2 < seg.y2
-          self
-        else
-          seg
-        end
-      else
+    if real_close(x1, x2)
+      # vsegline
+      if y1 > seg.y1
         seg.intersectWithSegmentAsLineResult(self)
-      end
-    elsif x1 < seg.x1
-      if real_close(x2, seg.x1)
-        Point.new(x2, y2)
-      elsif x2 < seg.x1
-        NoPoints.new
       else
-        if x2 > seg.x2
-          seg
+        if real_close(y2, seg.y1)
+          Point.new(x2, y2)
+        elsif y2 < seg.y1
+          NoPoints.new
+        elsif y2 < seg.y2
+          LineSegment(seg.x1, seg.y1, x2, y2)
         else
-          LineSegment.new(seg.x1, seg.y1, x2, y2)
+          seg
         end
       end
     else
-      seg.intersectWithSegmentAsLineResult(self)
+      # non-vsegline
+      if x1 > seg.x1
+        seg.intersectWithSegmentAsLineResult(self)
+      else
+        if real_close(x2, seg.x1)
+          Point.new(x2, y2)
+        elsif x2 < seg.x1
+          NoPoints.new
+        elsif x2 < seg.x2
+          LineSegment(seg.x1, seg.y1, x2, y2)
+        else
+          seg
+        end
+      end
     end
   end
 end
